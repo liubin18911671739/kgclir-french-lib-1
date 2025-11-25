@@ -1,0 +1,212 @@
+# FLO Knowledge Graph Construction Configuration
+# 知识图谱构建配置
+
+# ========== Ontology Definition ==========
+ontology:
+  version: "1.0"
+  base_uri: "http://kgclir.org/flo/"
+  author: "KG-CLIR Research Team"
+  description: "French Learning Ontology - 法语学习领域本体"
+  
+  # 实体类型定义（17种）
+  entity_types:
+    - Word          # 词汇
+    - Grammar       # 语法
+    - Pragmatics    # 语用
+    - Culture       # 文化
+    - Topic         # 主题
+    - Exercise      # 练习
+    - Task          # 任务
+    - Test          # 测试
+    - Outcome       # 学习成果
+    - Textbook      # 教材
+    - Reference     # 参考资料
+    - Article       # 文章
+    - Media         # 媒体资源
+    - LexCorpus     # 词汇语料
+    - Course        # 课程
+    - Level         # 水平等级
+    - CEFR_Skill    # CEFR技能
+  
+  # 关系类型定义（7种核心关系）
+  relation_types:
+    - belongsTo     # 从属关系（如：词汇 belongsTo 主题）
+    - supports      # 支持关系（如：语法 supports 技能）
+    - tests         # 测试关系（如：练习 tests 知识点）
+    - covers        # 覆盖关系（如：课程 covers 主题）
+    - hasPrereq     # 前置关系（如：高级语法 hasPrereq 基础语法）
+    - translatedAs  # 翻译关系（如：虚拟式 translatedAs subjonctif）
+    - sameAs        # 等价关系（如：同义词、跨语言等价）
+
+# ========== Data Sources ==========
+data_sources:
+  # 教材语料
+  textbooks:
+    path: "data/processed/textbooks_fr.jsonl"
+    encoding: "utf-8"
+    languages: ["fr", "zh", "en"]
+    min_length: 50  # 最小文本长度（字符）
+  
+  # 平行语料（用于跨语言对齐）
+  parallel_corpus:
+    path: "data/processed/alignment_seeds.jsonl"
+    format: "jsonl"
+    fields: ["source_text", "target_text", "source_lang", "target_lang"]
+  
+  # 学术资源
+  academic:
+    path: "data/processed/academic_resources.jsonl"
+    types: ["article", "reference", "media"]
+  
+  # 练习题库
+  exercises:
+    path: "data/processed/exercises_fr.jsonl"
+    difficulty_levels: ["A1", "A2", "B1", "B2", "C1", "C2"]
+  
+  # 演示数据（小规模）
+  demo:
+    enabled: true
+    path: "data/demo/demo_corpus.jsonl"
+    max_samples: 1000
+
+# ========== Entity Extraction Configuration ==========
+entity_extraction:
+  # spaCy模型配置
+  spacy:
+    enabled: true
+    models:
+      fr: "fr_core_news_sm"
+      en: "en_core_web_sm"
+      zh: "zh_core_web_sm"
+    entity_types: ["NOUN", "VERB", "ADJ", "PROPN"]
+    min_length: 2  # 最小实体长度（字符）
+  
+  # jieba分词（中文）
+  jieba:
+    enabled: true
+    pos_tags: ["n", "v", "a", "nz"]  # 保留名词、动词、形容词
+    min_length: 2
+  
+  # 规则抽取
+  rules:
+    enabled: true
+    patterns:
+      # 课程章节模式
+      - name: "course_pattern"
+        regex: "(?i)(chapitre|leçon|unité)\\s+(\\d+|[IVX]+)"
+        entity_type: "Course"
+      
+      # 语法概念模式
+      - name: "grammar_pattern"
+        regex: "(?i)(subjonctif|conditionnel|impératif|participe|infinitif)"
+        entity_type: "Grammar"
+      
+      # CEFR等级模式
+      - name: "cefr_pattern"
+        regex: "\\b([ABC][12])\\b"
+        entity_type: "Level"
+  
+  # 去重策略
+  deduplication:
+    strategy: "lowercase_type_lang"  # 基于(name.lower(), type, language)
+    merge_similar: true
+    similarity_threshold: 0.9
+
+# ========== Relation Extraction Configuration ==========
+relation_extraction:
+  # 依存句法规则
+  dependency_patterns:
+    enabled: true
+    max_distance: 5  # 最大依存距离
+  
+  # 模式匹配
+  pattern_matching:
+    enabled: true
+    patterns:
+      - name: "translation_pattern"
+        regex: "(.+?)\\s+(est|signifie|se traduit par)\\s+(.+)"
+        relation_type: "translatedAs"
+      
+      - name: "prerequisite_pattern"
+        regex: "avant de\\s+(.+?),\\s+(.+)"
+        relation_type: "hasPrereq"
+  
+  # 共现关系
+  cooccurrence:
+    enabled: true
+    window_size: 50  # 词窗口大小
+    min_frequency: 3
+
+# ========== Knowledge Fusion ==========
+fusion:
+  # 冲突解决策略
+  conflict_resolution:
+    strategy: "majority_vote"  # majority_vote | latest | highest_confidence
+  
+  # 质量过滤
+  quality_filter:
+    min_entity_frequency: 2  # 最小实体出现频率
+    min_relation_confidence: 0.5
+
+# ========== Neo4j Configuration ==========
+neo4j:
+  uri: "bolt://localhost:7687"
+  auth:
+    username: "neo4j"
+    password: "kgclir2024"
+  database: "kgclir"
+  
+  # 索引配置
+  indexes:
+    - property: "entity_id"
+      type: "unique"
+    - property: "name"
+      type: "fulltext"
+    - property: "language"
+      type: "lookup"
+  
+  # 批量导入配置
+  batch_import:
+    batch_size: 1000
+    num_workers: 4
+
+# ========== Fallback Configuration ==========
+fallback:
+  # 无法连接Neo4j时使用networkx
+  use_networkx: true
+  networkx_path: "outputs/kg/networkx_graph.pkl"
+
+# ========== Output Configuration ==========
+output:
+  formats: ["json", "rdf", "neo4j", "statistics"]
+  
+  paths:
+    # JSON格式（完整图谱）
+    json: "outputs/kg/knowledge_graph.json"
+    
+    # RDF格式（Turtle）
+    rdf: "outputs/kg/knowledge_graph.ttl"
+    
+    # 统计信息
+    statistics: "outputs/kg/kg_statistics.json"
+    
+    # 可视化
+    visualization: "outputs/kg/kg_visualization.html"
+  
+  # 统计指标
+  statistics_metrics:
+    - total_entities
+    - total_relations
+    - entities_by_type
+    - entities_by_language
+    - relations_by_type
+    - avg_degree
+    - isolated_nodes
+    - connected_components
+    - construction_time
+
+# ========== Logging ==========
+logging:
+  level: "INFO"
+  file: "logs/kg_construction.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

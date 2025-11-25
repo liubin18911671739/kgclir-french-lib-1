@@ -1,0 +1,260 @@
+# Cross-lingual Information Retrieval Configuration
+# KG-Enhanced跨语言检索配置
+
+# ========== Dense Retrieval Configuration ==========
+dense_model:
+  # 多语言语义向量模型
+  name: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  # 备选: sentence-transformers/LaBSE, intfloat/multilingual-e5-base
+  
+  # 设备配置
+  device: "cuda"
+  
+  # 模型参数
+  max_seq_length: 128
+  normalize_embeddings: true
+  
+  # 批处理
+  batch_size: 64
+  num_workers: 4
+  
+  # 模型缓存
+  cache_dir: "models/sentence_transformers"
+
+# ========== BM25 Configuration ==========
+bm25:
+  # Elasticsearch配置
+  elasticsearch:
+    enabled: true
+    host: "localhost"
+    port: 9200
+    scheme: "http"
+    
+    # 索引配置
+    index_name: "kgclir_documents"
+    
+    # BM25参数
+    k1: 1.5  # 词频饱和参数
+    b: 0.75  # 长度归一化参数
+    
+    # 批量索引
+    batch_size: 1000
+    refresh_interval: "30s"
+  
+  # Fallback: rank-bm25本地实现
+  fallback:
+    enabled: true
+    library: "rank-bm25"
+    tokenizer: "spacy"  # spacy | jieba | whitespace
+
+# ========== Knowledge Graph Expansion ==========
+kg_expansion:
+  # n-hop邻域查询
+  max_hops: 2
+  
+  # 关系类型权重（用于查询扩展）
+  relation_weights:
+    translatedAs: 1.0  # 翻译关系最重要
+    sameAs: 0.9
+    belongsTo: 0.7
+    supports: 0.6
+    covers: 0.6
+    hasPrereq: 0.5
+    tests: 0.4
+  
+  # 扩展策略
+  expansion_strategy:
+    method: "weighted_neighbor"  # weighted_neighbor | path_ranking | spreading_activation
+    
+    # 路径衰减因子
+    decay_factor: 0.8  # score = base_score * (decay_factor ^ path_length)
+    
+    # 最大扩展实体数
+    max_expansion_entities: 50
+  
+  # 对齐置信度阈值
+  alignment_threshold: 0.8  # 仅使用高置信度对齐
+
+# ========== Reranking Configuration ==========
+reranking:
+  # 联合排序权重（论文核心贡献）
+  # Formula: Score(d,q) = α·sim_dense + β·score_BM25 + γ·score_KG
+  
+  weights:
+    alpha: 0.4  # Dense权重
+    beta: 0.3   # BM25权重
+    gamma: 0.3  # KG权重
+  
+  # 权重优化
+  weight_optimization:
+    enabled: false  # 是否通过验证集优化权重
+    validation_set: "data/qrels/validation.qrels"
+    method: "grid_search"  # grid_search | bayesian
+    search_space:
+      alpha: [0.2, 0.3, 0.4, 0.5]
+      beta: [0.2, 0.3, 0.4, 0.5]
+      gamma: [0.1, 0.2, 0.3, 0.4]
+  
+  # KG得分计算
+  kg_score:
+    method: "path_based"  # path_based | embedding_based
+    
+    # 路径得分
+    path_score:
+      # score_KG = Σ path_score(q,d) / (1 + path_length)
+      max_paths: 10  # 最多考虑10条路径
+      path_diversity: true  # 惩罚重复路径
+    
+    # 可解释性
+    explainability:
+      enabled: true
+      return_paths: true  # 返回知识路径作为解释
+      max_explanation_paths: 3
+
+# ========== Query Processing ==========
+query_processing:
+  # 查询规范化
+  normalization:
+    lowercase: true
+    remove_stopwords: false  # BM25需要保留停用词
+    lemmatization: true
+  
+  # 查询扩展
+  expansion:
+    enabled: true
+    methods:
+      - "kg_neighbors"  # 基于KG的扩展
+      - "synonyms"      # 同义词扩展
+    max_expansion_terms: 10
+  
+  # 语言检测
+  language_detection:
+    method: "langdetect"  # langdetect | pycld2
+    fallback: "zh"  # 默认语言
+
+# ========== Document Corpus ==========
+corpus:
+  # 文档集路径
+  path: "data/processed/documents.jsonl"
+  
+  # 文档字段
+  fields:
+    id: "doc_id"
+    title: "title"
+    content: "content"
+    language: "language"
+    metadata: "metadata"
+  
+  # 语言分布
+  languages: ["zh", "fr", "en"]
+  
+  # 预处理
+  preprocessing:
+    max_length: 512  # 最大文档长度（tokens）
+    truncation: "head"  # head | tail | middle
+
+# ========== FAISS Index Configuration ==========
+faiss:
+  # 索引类型
+  index_type: "IVF256,Flat"  # IVF倒排索引 + Flat精确搜索
+  # 可选: "HNSW32" (更快但略低精度), "Flat" (暴力搜索,最精确)
+  
+  # 训练参数
+  training:
+    enabled: true
+    nlist: 256  # 聚类中心数
+    nprobe: 32  # 查询时探测的聚类数
+  
+  # GPU加速
+  use_gpu: true
+  gpu_id: 0
+  
+  # 索引路径
+  index_path: "models/faiss_index"
+
+# ========== Evaluation Configuration ==========
+evaluation:
+  # 测试集
+  qrels:
+    path: "data/qrels/test.qrels"
+    format: "trec"  # TREC格式: query_id 0 doc_id relevance
+  
+  # 查询集
+  queries:
+    path: "data/qrels/queries.tsv"
+    format: "tsv"
+    columns: ["query_id", "query_text", "language"]
+  
+  # 评价指标
+  metrics:
+    - "ndcg@10"
+    - "ndcg@20"
+    - "map"
+    - "mrr"
+    - "recall@50"
+    - "recall@100"
+    - "precision@10"
+  
+  # Baseline对比
+  baselines:
+    - name: "Translate+BM25"
+      description: "机器翻译+BM25"
+    
+    - name: "Dense Only"
+      description: "仅使用Dense向量检索"
+    
+    - name: "Dense+BM25"
+      description: "Dense+BM25联合（无KG）"
+  
+  # 显著性检验
+  significance_test:
+    enabled: true
+    method: "paired_t_test"  # paired_t_test | wilcoxon
+    alpha: 0.05
+    bootstrap_samples: 1000
+  
+  # 输出路径
+  output:
+    results: "outputs/retrieval/clir_results.json"
+    per_query: "outputs/retrieval/per_query_results.csv"
+    visualization: "outputs/retrieval/metrics_comparison.png"
+
+# ========== Search Configuration ==========
+search:
+  # 检索参数
+  top_k: 50  # 初始检索Top-K
+  rerank_top_k: 10  # 重排序后返回Top-K
+  
+  # 超时设置
+  timeout: 30  # 秒
+  
+  # 缓存
+  cache:
+    enabled: true
+    ttl: 3600  # 缓存有效期（秒）
+    max_size: 10000  # 最大缓存查询数
+
+# ========== Cross-lingual Strategy ==========
+cross_lingual:
+  # 跨语言策略
+  strategy: "kg_alignment"  # kg_alignment | machine_translation | both
+  
+  # 机器翻译（备选）
+  translation:
+    enabled: false
+    model: "Helsinki-NLP/opus-mt-zh-fr"
+    device: "cuda"
+
+# ========== Logging ==========
+logging:
+  level: "INFO"
+  file: "logs/retrieval.log"
+  
+  # 查询日志
+  query_log:
+    enabled: true
+    path: "logs/queries.log"
+    format: "json"
+
+# ========== Random Seed ==========
+random_seed: 42

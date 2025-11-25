@@ -1,0 +1,217 @@
+# Cross-lingual Entity Alignment Configuration
+# 跨语言实体对齐配置
+
+# ========== Alignment Strategy ==========
+strategy:
+  method: "hybrid"  # mtranse | gcn | hybrid (两阶段)
+  
+  stages:
+    # Stage 1: MTransE初始对齐
+    - name: "mtranse"
+      enabled: true
+      output: "outputs/alignment/mtranse_candidates.tsv"
+    
+    # Stage 2: GCN-Align精化
+    - name: "gcn_align"
+      enabled: true
+      input: "outputs/alignment/mtranse_candidates.tsv"
+      output: "outputs/alignment/final_alignment.tsv"
+
+# ========== Seed Alignments ==========
+seed_alignments:
+  # 人工标注的种子对齐对
+  path: "data/seeds/align_seeds.tsv"
+  format: "tsv"
+  columns: ["source_id", "target_id", "confidence"]
+  
+  # 最小种子数量要求
+  min_seeds:
+    zh_fr: 500
+    zh_en: 500
+    fr_en: 500
+  
+  # 种子验证
+  validation:
+    enabled: true
+    check_existence: true  # 检查实体是否存在于KG中
+
+# ========== MTransE Configuration ==========
+mtranse:
+  # Reference: Chen et al. (2017). MTransE. IJCAI.
+  # 多语言TransE嵌入
+  
+  # 嵌入维度
+  embedding_dim: 128
+  
+  # 训练参数
+  training:
+    epochs: 1000
+    batch_size: 128
+    learning_rate: 0.001
+    optimizer: "adam"
+    
+    # Margin-based ranking loss
+    margin: 1.0
+    negative_samples: 5  # 每个正样本的负样本数
+    
+    # Early stopping
+    early_stopping:
+      enabled: true
+      patience: 50
+      min_delta: 0.0001
+  
+  # 语言转换矩阵
+  transformation:
+    method: "linear"  # linear | orthogonal
+    regularization: 0.01
+  
+  # 对齐候选生成
+  candidate_generation:
+    top_k: 100  # 每个源实体的候选数量
+    threshold: 0.8  # 置信度阈值
+    metric: "cosine"  # cosine | euclidean
+
+# ========== GCN-Align Configuration ==========
+gcn_align:
+  # Reference: Wang et al. (2018). GCN-Align. EMNLP.
+  # 图卷积网络对齐
+  
+  # 网络架构
+  architecture:
+    num_layers: 2
+    hidden_dim: 256
+    activation: "relu"
+    dropout: 0.3
+  
+  # 训练参数
+  training:
+    epochs: 500
+    batch_size: 256
+    learning_rate: 0.001
+    optimizer: "adam"
+    
+    # 对比损失
+    loss:
+      type: "contrastive"  # contrastive | triplet
+      margin: 0.5
+      temperature: 0.1  # 温度参数
+    
+    # Hard negative mining
+    hard_negatives:
+      enabled: true
+      ratio: 0.3  # 困难负样本比例
+    
+    # Early stopping
+    early_stopping:
+      enabled: true
+      patience: 30
+      min_delta: 0.0001
+  
+  # 图卷积配置
+  gcn:
+    aggregation: "mean"  # mean | sum | max
+    normalization: true
+    self_loop: true
+
+# ========== Refinement Configuration ==========
+refinement:
+  # 迭代精化
+  iterations: 3
+  
+  # 置信度更新
+  confidence_update:
+    method: "weighted_average"  # weighted_average | max | vote
+    weights:
+      mtranse: 0.4
+      gcn: 0.6
+  
+  # 一致性检查
+  consistency_check:
+    enabled: true
+    # 检查对齐关系的传递闭包一致性
+    transitivity: true
+    # 检查1-1对齐约束
+    one_to_one: true
+
+# ========== Evaluation Configuration ==========
+evaluation:
+  # 测试集
+  test_set:
+    path: "data/seeds/test_alignments.tsv"
+    size: 0.2  # 从种子中划分20%作为测试集
+  
+  # 评价指标
+  metrics:
+    - "precision@1"
+    - "precision@5"
+    - "precision@10"
+    - "recall@1"
+    - "recall@5"
+    - "recall@10"
+    - "f1@1"
+    - "f1@5"
+    - "f1@10"
+    - "mrr"  # Mean Reciprocal Rank
+    - "hits@1"
+    - "hits@10"
+  
+  # 输出路径
+  output:
+    results: "outputs/alignment/evaluation_results.json"
+    visualization: "outputs/alignment/precision_recall_curve.png"
+
+# ========== Language Pairs ==========
+language_pairs:
+  # 对齐的语言对
+  pairs:
+    - source: "zh"
+      target: "fr"
+      priority: 1  # 最高优先级
+    
+    - source: "zh"
+      target: "en"
+      priority: 2
+    
+    - source: "fr"
+      target: "en"
+      priority: 2
+  
+  # 过渡对齐（通过英语桥接中法）
+  bridge_language: "en"
+  enable_bridge: true
+
+# ========== Device Configuration ==========
+device:
+  type: "cuda"  # cuda | cpu
+  gpu_id: 0
+  mixed_precision: true  # 混合精度训练（FP16）
+
+# ========== Random Seed ==========
+random_seed: 42
+
+# ========== Output ==========
+output:
+  # 最终对齐结果
+  final_alignment: "outputs/alignment/final_alignment.tsv"
+  
+  # 中间结果
+  intermediate:
+    mtranse_embeddings: "outputs/alignment/mtranse_embeddings.pkl"
+    gcn_embeddings: "outputs/alignment/gcn_embeddings.pkl"
+    candidates: "outputs/alignment/candidates.tsv"
+  
+  # 统计信息
+  statistics: "outputs/alignment/alignment_statistics.json"
+  
+  # 可视化
+  visualization:
+    enabled: true
+    sample_size: 100  # 可视化样本数量
+    output_path: "outputs/alignment/alignment_visualization.html"
+
+# ========== Logging ==========
+logging:
+  level: "INFO"
+  file: "logs/alignment.log"
+  tensorboard: true
+  tensorboard_dir: "logs/tensorboard/alignment"

@@ -1,0 +1,309 @@
+# Learning Support System Configuration
+# 学习支持系统配置
+
+# ========== Learner Modeling ==========
+learner_model:
+  # 知识掌握度估计
+  mastery_estimation:
+    # Formula: M(c) = n_c/N_c * w1 + coverage_rate(c) * w2
+    weights:
+      practice_weight: 0.7  # w1: 练习正确率权重
+      prerequisite_weight: 0.3  # w2: 前置知识覆盖率权重
+    
+    # 掌握度阈值
+    mastery_threshold: 0.7  # ≥0.7视为掌握
+    
+    # 遗忘曲线
+    forgetting_curve:
+      enabled: true
+      # decay = exp(-t/tau), t为天数, tau为时间常数
+      tau: 30  # 30天半衰期
+  
+  # 学习者画像
+  learner_profile:
+    # 存储路径
+    storage: "data/learner_profiles/"
+    
+    # 追踪指标
+    metrics:
+      - "concepts_learned"
+      - "concepts_mastered"
+      - "total_exercises_completed"
+      - "accuracy_rate"
+      - "learning_time"
+      - "learning_pace"
+    
+    # 初始水平
+    initial_level: "A1"  # CEFR等级
+
+# ========== Learning Path Recommendation ==========
+path_recommendation:
+  # 推荐策略
+  strategy: "kg_prerequisite"  # kg_prerequisite | collaborative | hybrid
+  
+  # 基于KG前置关系的路径推荐
+  kg_based:
+    # 使用hasPrereq关系构建依赖图
+    relation_types: ["hasPrereq", "supports"]
+    
+    # 路径搜索算法
+    algorithm: "topological_sort"  # topological_sort | shortest_path | personalized_pagerank
+    
+    # 路径长度限制
+    max_path_length: 10
+    min_path_length: 3
+    
+    # 个性化因素
+    personalization:
+      consider_mastery: true  # 跳过已掌握的概念
+      consider_difficulty: true  # 考虑难度递进
+      consider_interest: false  # 考虑学习者兴趣（需要历史数据）
+  
+  # 路径优化
+  optimization:
+    # 优化目标
+    objective: "learning_efficiency"  # learning_efficiency | coverage | time
+    
+    # 约束条件
+    constraints:
+      max_daily_concepts: 5  # 每日最多学习概念数
+      min_practice_per_concept: 3  # 每个概念最少练习题数
+  
+  # 输出格式
+  output:
+    format: "dag"  # dag (有向无环图) | linear (线性序列)
+    include_resources: true  # 包含学习资源推荐
+
+# ========== RAG Exercise Generation ==========
+rag_exercise:
+  # LLM配置
+  llm:
+    # 优先使用Claude
+    primary:
+      provider: "anthropic"
+      model: "claude-3-sonnet-20240229"
+      api_key_env: "ANTHROPIC_API_KEY"
+      temperature: 0.7
+      max_tokens: 1000
+    
+    # 备选OpenAI
+    fallback:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      temperature: 0.7
+      max_tokens: 1000
+  
+  # 检索增强配置
+  retrieval:
+    # 从KG检索相关知识片段
+    top_k_evidence: 5
+    evidence_max_length: 200  # 每个证据最大长度
+    
+    # 检索策略
+    retrieval_strategy: "concept_neighbors"  # concept_neighbors | semantic_search
+  
+  # Prompt模板
+  prompt_template: |
+    你是一位专业的法语教师。基于以下知识内容，生成一道关于{concept}的{exercise_type}。
+    
+    知识内容：
+    {retrieved_evidence}
+    
+    要求：
+    1. 题目用法语编写，符合{level}水平
+    2. 解析用中文编写，便于学习者理解
+    3. 难度适中，紧密结合给定的知识内容
+    4. 选择题提供4个选项（A/B/C/D），其中1个正确答案
+    
+    请以JSON格式返回：
+    {{
+      "question": "题目（法语）",
+      "options": ["A选项", "B选项", "C选项", "D选项"],
+      "answer": "正确答案字母",
+      "explanation": "详细解析（中文）",
+      "knowledge_points": ["相关知识点1", "知识点2"]
+    }}
+  
+  # 题目类型
+  exercise_types:
+    - "choice"  # 选择题
+    - "fill_blank"  # 填空题
+    - "translation"  # 翻译题
+    - "error_correction"  # 改错题
+  
+  # 防幻觉策略
+  hallucination_prevention:
+    # 强制引用检索证据
+    require_evidence_citation: true
+    
+    # 后验一致性检查
+    consistency_check:
+      enabled: true
+      # 检查答案是否在证据中可验证
+      verify_against_evidence: true
+  
+  # 题目质量控制
+  quality_control:
+    # 最少生成尝试次数
+    min_attempts: 1
+    max_attempts: 3
+    
+    # 质量检查项
+    checks:
+      - "has_question"
+      - "has_options"
+      - "has_answer"
+      - "has_explanation"
+
+# ========== Learning Feedback Loop ==========
+feedback_loop:
+  # 实时反馈
+  real_time_feedback:
+    enabled: true
+    
+    # 答题后立即反馈
+    immediate_feedback:
+      show_correct_answer: true
+      show_explanation: true
+      show_related_concepts: true
+  
+  # 自适应调整
+  adaptive_adjustment:
+    enabled: true
+    
+    # 根据答题情况调整难度
+    difficulty_adjustment:
+      # 连续答对3题 → 提升难度
+      promotion_threshold: 3
+      
+      # 连续答错3题 → 降低难度
+      demotion_threshold: 3
+      
+      # 难度级别
+      difficulty_levels: ["easy", "medium", "hard"]
+    
+    # 根据掌握度调整推荐
+    recommendation_adjustment:
+      # 掌握度高 → 推荐新概念
+      # 掌握度低 → 推荐巩固练习
+      mastery_based: true
+  
+  # 学习分析
+  learning_analytics:
+    # 追踪学习行为
+    tracking:
+      - "exercise_completion_time"
+      - "answer_correctness"
+      - "hint_usage"
+      - "retry_count"
+    
+    # 生成学习报告
+    report_generation:
+      enabled: true
+      frequency: "weekly"  # daily | weekly | monthly
+      output_path: "outputs/learning/reports/"
+
+# ========== Evaluation Configuration ==========
+evaluation:
+  # 对照实验设计
+  experiment_design:
+    # 实验组vs对照组
+    groups:
+      - name: "experimental"
+        description: "使用KG-CLIR学习支持系统"
+        size: 30
+      
+      - name: "control"
+        description: "使用传统检索系统"
+        size: 30
+    
+    # 实验周期
+    duration_days: 30
+    
+    # 前测/后测
+    pre_post_test:
+      enabled: true
+      test_path: "data/tests/french_proficiency_test.json"
+  
+  # 评价指标
+  metrics:
+    # 学习效果
+    learning_outcomes:
+      - "pre_test_score"
+      - "post_test_score"
+      - "score_improvement"
+      - "concepts_mastered_count"
+    
+    # 学习效率
+    learning_efficiency:
+      - "time_to_mastery"
+      - "exercise_completion_rate"
+      - "learning_curve_slope"
+    
+    # 用户体验
+    user_experience:
+      - "system_satisfaction"
+      - "perceived_usefulness"
+      - "ease_of_use"
+  
+  # 统计检验
+  statistical_test:
+    method: "paired_t_test"  # paired_t_test | anova
+    alpha: 0.05
+    
+    # 效应量
+    effect_size: "cohen_d"
+  
+  # 输出路径
+  output:
+    results: "outputs/learning/learning_results.csv"
+    report: "outputs/learning/evaluation_report.pdf"
+    visualization: "outputs/learning/learning_curves.png"
+
+# ========== Resource Recommendation ==========
+resource_recommendation:
+  # 资源类型
+  resource_types:
+    - "textbook"
+    - "article"
+    - "video"
+    - "audio"
+    - "exercise"
+  
+  # 推荐策略
+  strategy: "concept_based"  # concept_based | collaborative | content_based
+  
+  # 推荐数量
+  top_k: 5
+  
+  # 资源过滤
+  filtering:
+    language_match: true  # 匹配学习者语言偏好
+    level_appropriate: true  # 匹配CEFR等级
+    exclude_learned: true  # 排除已学资源
+
+# ========== Data Storage ==========
+storage:
+  # 学习记录数据库
+  database:
+    type: "sqlite"  # sqlite | postgresql
+    path: "data/learning_records.db"
+  
+  # 练习题库
+  exercise_bank:
+    path: "data/exercise_bank.json"
+    max_size: 10000
+
+# ========== Logging ==========
+logging:
+  level: "INFO"
+  file: "logs/learning_support.log"
+  
+  # 学习活动日志
+  activity_log:
+    enabled: true
+    path: "logs/learning_activities.jsonl"
+
+# ========== Random Seed ==========
+random_seed: 42

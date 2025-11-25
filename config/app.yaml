@@ -1,0 +1,309 @@
+# Application Configuration
+# 应用服务配置（FastAPI + Gradio）
+
+# ========== API Configuration (FastAPI) ==========
+api:
+  # 服务器配置
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    reload: true  # 开发模式自动重载
+    workers: 4  # 生产环境worker数量
+  
+  # CORS配置
+  cors:
+    enabled: true
+    allow_origins:
+      - "http://localhost:7860"  # Gradio前端
+      - "http://localhost:3000"  # 开发前端
+    allow_methods: ["GET", "POST", "PUT", "DELETE"]
+    allow_headers: ["*"]
+    allow_credentials: true
+  
+  # API文档
+  docs:
+    title: "KG-CLIR API"
+    description: "多语种知识图谱跨语言检索与学习支持系统API"
+    version: "1.0.0"
+    openapi_url: "/openapi.json"
+    docs_url: "/docs"  # Swagger UI
+    redoc_url: "/redoc"  # ReDoc
+  
+  # 限流配置
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+    burst: 10
+
+# ========== Gradio Configuration ==========
+gradio:
+  # 服务器配置
+  server:
+    host: "0.0.0.0"
+    port: 7860
+    share: false  # 公网分享（仅开发测试）
+    auth: false  # 是否启用认证
+  
+  # 界面配置
+  ui:
+    title: "KG-CLIR 法语学习支持系统"
+    description: |
+      基于多语种知识图谱的跨语言检索与自适应学习系统
+      
+      功能模块：
+      - 🔍 跨语言检索：支持中/法/英三语查询
+      - 📚 学习路径：个性化知识路径推荐
+      - ✏️ 智能练习：RAG驱动的自适应题目生成
+    
+    theme: "default"  # default | soft | monochrome
+    
+    # CSS自定义
+    custom_css: |
+      .gradio-container {
+        font-family: 'Noto Sans SC', sans-serif;
+      }
+      .knowledge-path {
+        border: 2px solid #4CAF50;
+        border-radius: 8px;
+        padding: 10px;
+      }
+  
+  # 示例数据
+  examples:
+    search:
+      - ["法语虚拟式用法", "zh", 10]
+      - ["subjonctif français", "fr", 10]
+      - ["French subjunctive mood", "en", 10]
+    
+    learning_path:
+      - ["subjonctif", "A2"]
+      - ["passé composé", "A1"]
+    
+    exercise:
+      - ["虚拟式", "A2"]
+      - ["冠词", "A1"]
+
+# ========== Service Endpoints ==========
+endpoints:
+  # 健康检查
+  health:
+    path: "/health"
+    timeout: 5
+  
+  # 跨语言检索
+  search:
+    path: "/search"
+    method: "POST"
+    timeout: 30
+    max_results: 50
+  
+  # 学习路径推荐
+  recommend_path:
+    path: "/recommend"
+    method: "POST"
+    timeout: 10
+  
+  # 练习生成
+  generate_exercise:
+    path: "/exercise"
+    method: "POST"
+    timeout: 20
+    cache_enabled: false  # 不缓存练习题
+  
+  # 答题反馈
+  submit_answer:
+    path: "/submit"
+    method: "POST"
+    timeout: 5
+  
+  # 学习进度查询
+  get_progress:
+    path: "/progress/{user_id}"
+    method: "GET"
+    timeout: 5
+  
+  # 知识图谱查询
+  query_kg:
+    path: "/kg/query"
+    method: "POST"
+    timeout: 10
+
+# ========== Response Format ==========
+response:
+  # 标准响应格式
+  format:
+    success:
+      status: "success"
+      data: {}
+      message: ""
+    
+    error:
+      status: "error"
+      code: ""
+      message: ""
+      details: {}
+  
+  # 分页配置
+  pagination:
+    default_page_size: 10
+    max_page_size: 100
+
+# ========== Caching ==========
+cache:
+  # Redis缓存（可选）
+  redis:
+    enabled: false
+    host: "localhost"
+    port: 6379
+    db: 0
+    ttl: 3600
+  
+  # 内存缓存
+  memory:
+    enabled: true
+    max_size: 1000
+    ttl: 1800
+
+# ========== Security ==========
+security:
+  # API密钥认证（可选）
+  api_key:
+    enabled: false
+    header_name: "X-API-Key"
+  
+  # JWT认证（可选）
+  jwt:
+    enabled: false
+    secret_key: "your-secret-key-change-in-production"
+    algorithm: "HS256"
+    expire_minutes: 60
+  
+  # HTTPS
+  https:
+    enabled: false
+    cert_file: "certs/cert.pem"
+    key_file: "certs/key.pem"
+
+# ========== Monitoring ==========
+monitoring:
+  # Prometheus指标
+  prometheus:
+    enabled: false
+    endpoint: "/metrics"
+  
+  # 日志
+  logging:
+    level: "INFO"
+    format: "json"
+    file: "logs/api.log"
+    
+    # 请求日志
+    request_logging:
+      enabled: true
+      log_body: false  # 不记录请求体（隐私保护）
+  
+  # 性能追踪
+  tracing:
+    enabled: false
+    service_name: "kgclir-api"
+
+# ========== Frontend Assets ==========
+assets:
+  # 静态文件目录
+  static_dir: "static/"
+  
+  # 媒体文件
+  media_dir: "media/"
+  
+  # Logo和图标
+  logo: "static/logo.png"
+  favicon: "static/favicon.ico"
+
+# ========== Error Handling ==========
+error_handling:
+  # 错误响应格式
+  include_traceback: false  # 生产环境关闭
+  
+  # 自定义错误消息
+  custom_messages:
+    404: "资源未找到"
+    500: "服务器内部错误，请稍后重试"
+    503: "服务暂时不可用"
+
+# ========== Background Tasks ==========
+background_tasks:
+  # 异步任务队列（可选）
+  celery:
+    enabled: false
+    broker: "redis://localhost:6379/1"
+    backend: "redis://localhost:6379/2"
+  
+  # 定时任务
+  scheduled_tasks:
+    # 每日统计
+    - name: "daily_statistics"
+      schedule: "0 0 * * *"  # Cron表达式
+      enabled: false
+    
+    # 缓存清理
+    - name: "cache_cleanup"
+      schedule: "0 */6 * * *"
+      enabled: true
+
+# ========== Database (Optional) ==========
+database:
+  # 用户数据库（可选）
+  enabled: false
+  type: "sqlite"
+  url: "sqlite:///data/app.db"
+  
+  # 连接池
+  pool_size: 10
+  max_overflow: 20
+
+# ========== Feature Flags ==========
+features:
+  # 功能开关
+  enable_search: true
+  enable_learning_path: true
+  enable_exercise_generation: true
+  enable_kg_visualization: true
+  enable_user_profiles: false  # 暂未实现
+  enable_social_features: false  # 未来功能
+
+# ========== Internationalization ==========
+i18n:
+  # 支持语言
+  supported_languages:
+    - code: "zh"
+      name: "中文"
+    - code: "fr"
+      name: "Français"
+    - code: "en"
+      name: "English"
+  
+  # 默认语言
+  default_language: "zh"
+  
+  # 翻译文件目录
+  translations_dir: "locales/"
+
+# ========== Testing ==========
+testing:
+  # 测试模式
+  test_mode: false
+  
+  # Mock数据
+  use_mock_data: false
+  mock_data_path: "tests/mock_data/"
+
+# ========== Deployment ==========
+deployment:
+  environment: "development"  # development | staging | production
+  
+  # 生产环境配置
+  production:
+    debug: false
+    reload: false
+    workers: 8
+    log_level: "WARNING"
