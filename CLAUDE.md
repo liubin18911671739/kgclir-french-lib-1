@@ -61,8 +61,23 @@ docker run -d --name neo4j \
   -e NEO4J_AUTH=neo4j/kgclir2024 \
   neo4j:4.4
 
+# Or use Docker Compose for all services
+docker-compose -f docker/docker-compose.yml up -d
+
 # Run application (when implemented)
 bash scripts/run_app.sh
+
+# Environment health check
+python scripts/check_environment.py
+
+# Run complete experiment pipeline
+bash scripts/run_full_experiment.sh
+
+# Console commands (if installed via pip install -e .)
+kgclir-build --config config/kg.yaml
+kgclir-search --query "法语虚拟式用法" --language zh
+kgclir-app
+kgclir-check
 ```
 
 ### Development Workflow
@@ -79,6 +94,18 @@ flake8 src/ tests/
 
 # Type checking with mypy
 mypy src/
+
+# Install in development mode
+pip install -e .
+
+# Prepare corpus data
+python scripts/prepare_corpus.py
+
+# Create demo data for testing
+python scripts/create_demo_data.py
+
+# Validate corpus format
+python scripts/validate_corpus.py
 ```
 
 ## Architecture and Structure
@@ -274,6 +301,26 @@ Per PROJECT_STATUS.md, remaining work (75%) prioritized as:
 - **Neo4j Auth**: Default password is `kgclir2024` (check .env.example)
 - **CUDA/CPU**: Set `DEVICE=cpu` in .env if no GPU available
 - **FAISS**: Use `faiss-cpu` instead of `faiss-gpu` if no CUDA
+- **Environment Setup**: Run `python scripts/check_environment.py` to verify setup
+- **Memory Issues**: Use `--demo` flag for testing with small datasets
+- **Service Dependencies**: Use Docker Compose to start Neo4j/Elasticsearch together
+
+## Installation Options
+
+### Development Install
+```bash
+pip install -e .[dev,notebook]  # Development mode with extra tools
+```
+
+### CPU-Only Install
+```bash
+pip install -e .[cpu]  # CPU-only versions (no CUDA dependencies)
+```
+
+### Production Install
+```bash
+pip install .  # Standard installation
+```
 
 ## Key Files for Context
 

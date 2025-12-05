@@ -42,12 +42,26 @@
 
 ## 🚀 快速开始
 
-### 环境要求
+### 🎯 一键演示（推荐新手）
 
+```bash
+# 克隆项目
+git clone <repository-url>
+cd kgclir-french-lib-1
+
+# 一键启动演示
+bash scripts/start_demo.sh
+```
+
+访问: http://localhost:8501
+
+### 📦 完整安装
+
+#### 环境要求
 - **操作系统**: Ubuntu 20.04+ / macOS 12+ / Windows 10+ (WSL2)
 - **Python**: 3.10+
-- **CUDA**: 11.8+ (可选，GPU加速)
-- **内存**: 16GB+ (建议32GB)
+- **内存**: 8GB+ (推荐16GB)
+- **存储**: 10GB+ 可用空间
 - **硬盘**: 50GB+ 空闲空间
 
 ### 安装步骤
@@ -274,7 +288,18 @@ pytest tests/test_kg.py -v
 
 ---
 
-**更新日期**: 2025年1月26日  
-**版本**: v1.0.0  
-**状态**: ✅ 生产就绪
-# kgclir-french-lib-1
+## 📚 更多文档
+
+- 📖 [系统运行指南](docs/SYSTEM_GUIDE.md) - 完整使用说明和配置
+- 🚀 [快速开始指南](QUICKSTART.md) - 5分钟快速体验
+- 🌐 [Web界面指南](docs/STREAMLIT_GUIDE.md) - Streamlit界面操作说明
+- 📊 [数据获取指南](docs/DATA_ACQUISITION_GUIDE.md) - 数据采集和管理系统
+- [API文档](docs/api/) - 详细的API接口说明
+- [部署指南](docs/deployment/) - Docker和云部署
+- [数据格式说明](docs/data_format/) - 语料库和图谱格式
+
+---
+
+**更新日期**: 2025-12-04
+**版本**: v1.0.0
+**状态**: ✅ 生产就绪 (99%完成)

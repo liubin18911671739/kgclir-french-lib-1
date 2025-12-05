@@ -1,0 +1,423 @@
+# 数据获取系统配置文件
+
+# 连接器配置
+connectors:
+  # 学术数据库配置
+  academic:
+    # PubMed配置
+    pubmed:
+      email: "your-email@example.com"  # 必需，用于API请求
+      api_key: null  # 可选，增加请求限制
+
+    # IEEE Xplore配置
+    ieee:
+      api_key: "your-ieee-api-key"  # 必需
+
+    # arXiv配置
+    arxiv: {}  # 无需额外配置
+
+    # Google Scholar配置
+    google_scholar: {}  # 使用scholarly库，有限制
+
+    # CNKI知网配置
+    cnki:
+      api_key: null  # 可选
+      username: null  # 可选
+      password: null  # 可选
+
+  # 开放数据平台配置
+  open_data:
+    # HuggingFace Datasets配置
+    huggingface: {}  # 无需额外配置
+
+    # Kaggle配置
+    kaggle:
+      username: "your-kaggle-username"  # 必需
+      api_key: "your-kaggle-api-key"    # 必需
+
+  # 图书馆系统配置
+  library_systems:
+    # 示例：大学图书馆OPAC系统
+    university_library:
+      type: "opac"
+      url: "https://library.university.edu"
+      name: "University Library"
+      max_results: 100
+
+    # 示例：Z39.50系统
+    national_library:
+      type: "z3950"
+      host: "z3950.loc.gov"
+      port: 7090
+      database: "VOYAGER"
+      name: "National Library"
+
+  # 社交媒体配置
+  social_media:
+    # Twitter配置
+    twitter:
+      consumer_key: "your-consumer-key"
+      consumer_secret: "your-consumer-secret"
+      access_token: "your-access-token"
+      access_token_secret: "your-access-token-secret"
+
+    # Reddit配置
+    reddit:
+      client_id: "your-client-id"
+      client_secret: "your-client-secret"
+      user_agent: "KG-CLIR Data Acquisition v1.0"
+
+    # 微博配置（需要特殊权限）
+    weibo:
+      app_key: "your-weibo-app-key"
+      app_secret: "your-weibo-app-secret"
+
+# 文本处理器配置
+processors:
+  # 文本规范化配置
+  text_normalization:
+    remove_whitespace: true          # 移除多余空白
+    normalize_punctuation: true      # 标准化标点符号
+    remove_special_chars: false      # 移除特殊字符
+    lowercase: false                 # 转换为小写
+    remove_stopwords: false          # 移除停用词
+    min_word_length: 2               # 最小词长
+    max_word_length: 50              # 最大词长
+
+  # 语言检测配置
+  language_detection:
+    enabled: true                    # 启用语言检测
+    default_language: "en"           # 默认语言
+    confidence_threshold: 0.8        # 置信度阈值
+    supported_languages:             # 支持的语言列表
+      - "zh"  # 中文
+      - "en"  # 英文
+      - "fr"  # 法语
+
+  # NLP模型配置
+  nlp_models:
+    # 中文模型
+    zh:
+      model: "zh_core_web_sm"        # 模型名称
+      enabled: true                  # 是否启用
+      max_length: 1000000           # 最大文本长度
+
+    # 法语模型
+    fr:
+      model: "fr_core_news_sm"       # 模型名称
+      enabled: true                  # 是否启用
+      max_length: 1000000           # 最大文本长度
+
+    # 英文模型
+    en:
+      model: "en_core_web_sm"        # 模型名称
+      enabled: true                  # 是否启用
+      max_length: 1000000           # 最大文本长度
+
+  # 元数据提取配置
+  metadata_extraction:
+    enable_title_extraction: true
+    enable_author_extraction: true
+    enable_keyword_extraction: true
+    enable_abstract_extraction: true
+    enable_doi_extraction: true
+    enable_url_extraction: true
+    enable_date_extraction: true
+    enable_reference_extraction: true
+
+  # 知识提取配置
+  knowledge_extraction:
+    enable_entity_extraction: true
+    enable_concept_extraction: true
+    enable_relation_extraction: true
+    entity_types:                    # 要提取的实体类型
+      - "PERSON"
+      - "ORG"
+      - "GPE"
+      - "PRODUCT"
+      - "EVENT"
+    concept_patterns:                # 概念提取模式
+      definition:
+        - "(\w+)\s*[是为]\s*([^。；;]+)"
+      classification:
+        - "(\w+)\s*[是属于]\s*(\w+)"
+
+# 数据质量控制配置
+quality_control:
+  # 验证配置
+  validation:
+    # 质量阈值
+    quality_thresholds:
+      overall: 0.7          # 总体质量阈值
+      content: 0.6          # 内容质量阈值
+      metadata: 0.5         # 元数据质量阈值
+      structure: 0.6        # 结构质量阈值
+
+    # 验证规则
+    validation_rules:
+      # 标题长度检查
+      title_length:
+        min_length: 5
+        max_length: 200
+        enabled: true
+
+      # 内容长度检查
+      content_length:
+        min_length: 50
+        max_length: 100000
+        enabled: true
+
+      # 语言检测检查
+      language_detection:
+        enabled: true
+        pattern: "^[a-z]{2}$"
+
+      # 邮箱格式检查
+      email_format:
+        enabled: true
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+
+      # DOI格式检查
+      doi_format:
+        enabled: true
+        pattern: "^10\\.\\d+/"
+
+      # URL格式检查
+      url_format:
+        enabled: true
+        pattern: "^https?://"
+
+  # 数据清洗配置
+  cleaning:
+    enable_text_cleaning: true           # 启用文本清洗
+    enable_format_standardization: true  # 启用格式标准化
+    remove_empty_fields: true           # 移除空字段
+    normalize_dates: true               # 标准化日期格式
+    date_format: "YYYY-MM-DD"          # 目标日期格式
+    url_protocol: "https"              # URL协议
+    remove_duplicates: true            # 移除重复项
+    trim_whitespace: true              # 移除首尾空白
+
+  # 数据库配置
+  database_path: "data/quality_control.db"
+  backup_enabled: true
+  backup_interval: 24  # 小时
+
+# 调度器配置
+scheduler:
+  # 基本配置
+  max_workers: 4                  # 最大工作线程数
+  max_concurrent_tasks: 3          # 最大并发任务数
+  database_path: "data/scheduler.db"
+
+  # 任务队列配置
+  queue_size: 1000               # 队列大小
+  priority_queue: true            # 启用优先级队列
+  load_balancing: true            # 启用负载均衡
+
+  # 重试配置
+  default_max_retries: 3          # 默认最大重试次数
+  default_retry_delay: 300        # 默认重试延迟（秒）
+  exponential_backoff: true       # 启用指数退避
+
+  # 超时配置
+  default_timeout: 3600           # 默认超时时间（秒）
+  connection_timeout: 30          # 连接超时时间（秒）
+
+  # 监控配置
+  monitoring:
+    # 告警阈值
+    alert_thresholds:
+      failure_rate: 0.3            # 失败率阈值
+      execution_time: 3600         # 执行时间阈值（秒）
+      queue_size: 10               # 队列大小阈值
+      memory_usage: 0.8            # 内存使用阈值
+      cpu_usage: 0.8               # CPU使用阈值
+
+    # 通知配置
+    notifications:
+      enabled: false               # 启用通知
+
+      # 邮件通知
+      email:
+        enabled: false
+        smtp_server: "smtp.example.com"
+        smtp_port: 587
+        username: "your-email@example.com"
+        password: "your-password"
+        use_tls: true
+        recipients:
+          - "admin@example.com"
+          - "ops@example.com"
+
+      # Slack通知
+      slack:
+        enabled: false
+        webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+        channel: "#alerts"
+
+      # 钉钉通知
+      dingtalk:
+        enabled: false
+        webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
+
+    # 监控间隔
+    check_interval: 60            # 检查间隔（秒）
+    report_interval: 3600         # 报告间隔（秒）
+
+# 预定义任务配置
+tasks:
+  # PubMed每日更新任务
+  pubmed_daily_update:
+    name: "PubMed每日更新"
+    description: "每日从PubMed获取最新的机器学习和法语学习相关文献"
+    task_type: "data_acquisition"
+    schedule: "daily_09:00"
+    connector_config:
+      type: "academic"
+      pubmed:
+        email: "your-email@example.com"
+    parameters:
+      query: "machine learning AND french"
+      max_results: 100
+      date_range: "7d"  # 最近7天
+      databases: ["pubmed"]
+    priority: "high"
+    enabled: true
+    max_retries: 3
+    timeout: 1800
+
+  # arXiv每周更新任务
+  arxiv_weekly_update:
+    name: "arXiv每周更新"
+    description: "每周从arXiv获取最新的人工智能相关论文"
+    task_type: "data_acquisition"
+    schedule: "weekly_monday_10:00"
+    connector_config:
+      type: "academic"
+      arxiv: {}
+    parameters:
+      query: "artificial intelligence OR machine learning"
+      max_results: 200
+      databases: ["arxiv"]
+    priority: "normal"
+    enabled: true
+
+  # 质量检查任务
+  quality_hourly_check:
+    name: "数据质量检查"
+    description: "每小时检查新增数据的质量"
+    task_type: "quality_check"
+    schedule: "every_1h"
+    connector_config:
+      validation:
+        quality_thresholds:
+          overall: 0.7
+    parameters:
+      limit: 50
+      quality_threshold: 0.7
+    priority: "normal"
+    enabled: true
+
+  # 数据清洗任务
+  cleaning_daily_task:
+    name: "数据清洗"
+    description: "每日清洗和标准化数据"
+    task_type: "data_cleaning"
+    schedule: "daily_02:00"
+    connector_config:
+      cleaning:
+        enable_text_cleaning: true
+        enable_format_standardization: true
+    parameters:
+      batch_size: 100
+      skip_validated: true
+    priority: "low"
+    enabled: true
+
+  # 多语言对齐任务
+  multilingual_alignment:
+    name: "多语言对齐"
+    description: "对多语言内容进行对齐处理"
+    task_type: "multilingual_processing"
+    schedule: "every_6h"
+    connector_config:
+      alignment:
+        methods: ["lexical", "embedding"]
+    parameters:
+      source_languages: ["zh", "en"]
+      target_languages: ["fr", "en"]
+      batch_size: 20
+    priority: "normal"
+    enabled: false  # 默认禁用
+
+# 性能优化配置
+performance:
+  # 缓存配置
+  cache:
+    enabled: true
+    ttl: 3600                    # 缓存生存时间（秒）
+    max_size: 1000               # 最大缓存条目数
+    cache_dir: "cache"           # 缓存目录
+
+  # 并发配置
+  concurrency:
+    max_concurrent_requests: 5   # 最大并发请求数
+    request_timeout: 30          # 请求超时时间
+    connection_pool_size: 10     # 连接池大小
+
+  # 批处理配置
+  batch_processing:
+    enabled: true
+    batch_size: 50               # 批处理大小
+    parallel_batches: 2          # 并行批处理数
+
+# 日志配置
+logging:
+  level: "INFO"                  # 日志级别
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/data_acquisition.log"
+  max_file_size: 10485760        # 10MB
+  backup_count: 5               # 备份文件数
+
+  # 特定模块日志级别
+  loggers:
+    "src.data.connectors": "DEBUG"
+    "src.data.processors": "INFO"
+    "src.data.quality_control": "INFO"
+    "src.data.scheduler": "INFO"
+
+# 安全配置
+security:
+  # API密钥管理
+  api_keys:
+    encryption_enabled: true
+    key_rotation_days: 90
+
+  # 数据隐私
+  privacy:
+    anonymize_personal_data: true
+    retain_ip_addresses: false
+    data_retention_days: 365
+
+  # 访问控制
+  access_control:
+    enabled: false
+    allowed_ips: []
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+
+# 开发和测试配置
+development:
+  debug_mode: false
+  mock_apis: false
+  test_data_dir: "tests/data"
+  enable_profiling: false
+
+  # 测试配置
+  testing:
+    use_test_database: true
+    test_database_path: ":memory:"
+    mock_external_apis: true
+    small_test_datasets: true

@@ -14,12 +14,35 @@ KG-CLIR Utilities Package
 __version__ = "1.0.0"
 __author__ = "KG-CLIR Research Team"
 
-from .io import load_jsonl, save_jsonl, load_tsv, save_tsv
-from .text_norm import normalize_text, remove_stopwords, lemmatize
-from .lang_detect import detect_language, is_valid_language
-from .metrics import calculate_ndcg, calculate_mrr, calculate_recall
-from .stats import compute_statistics, export_statistics
-from .logger import get_logger, setup_logging
+try:
+    from .io import load_jsonl, save_jsonl, load_tsv, save_tsv
+except ImportError:
+    pass
+
+try:
+    from .text_norm import normalize_text, remove_stopwords, lemmatize
+except ImportError:
+    pass
+
+try:
+    from .lang_detect import detect_language, is_valid_language
+except ImportError:
+    pass
+
+try:
+    from .metrics import calculate_ndcg, calculate_mrr, calculate_recall
+except ImportError:
+    pass
+
+try:
+    from .stats import compute_statistics, export_statistics
+except ImportError:
+    pass
+
+try:
+    from .logger import get_logger, setup_logging
+except ImportError:
+    pass
 
 __all__ = [
     # I/O

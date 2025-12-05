@@ -1,0 +1,17 @@
+[global]
+developmentMode = false
+
+[server]
+port = 8501
+address = "0.0.0.0"
+headless = false
+runOnSave = false
+fileWatcherType = "none"
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
+
+[logger]
+level = "info"
+messageFormat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
